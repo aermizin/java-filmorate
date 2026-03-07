@@ -19,6 +19,7 @@ public class FilmService {
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
     private final Map<Long, Film> films = new HashMap<>();
+    private long nextUserId = 1;
 
     public Collection<Film> findAll() {
         log.info("Выполняется получение всех фильмов");
@@ -28,8 +29,8 @@ public class FilmService {
     public Film create(Film newFilm) {
         log.info("Создание фильма: name = {}", newFilm.getName());
         validateFilm(newFilm);
-        newFilm.setId(getNextIdFilm());
-        films.put(newFilm.getId(), newFilm);
+        long userId = nextUserId++;
+        films.put(userId, newFilm);
         log.info("Фильм успешно создан. Id: {}, name: {}", newFilm.getId(), newFilm.getName());
         return newFilm;
     }
@@ -41,16 +42,17 @@ public class FilmService {
             throw new ValidationException("Id фильма не может быть null");
         }
 
-        if (films.containsKey(updateFilm.getId())) {
-            Film newFilm = updateFilmFields(updateFilm);
-            validateFilm(newFilm);
-            films.put(newFilm.getId(), newFilm);
-            log.info("Поля фильма успешно обновлены. Id: {}", newFilm.getId());
-            return newFilm;
-        } else {
+        if (!films.containsKey(updateFilm.getId())) {
             log.error("Ошибка валидации при обновлении фильма: ID фильма не найден. ID: {}", updateFilm.getId());
             throw new NotFoundException("Фильм с id = " + updateFilm.getId() + " не найден.");
         }
+
+        Film newFilm = updateFilmFields(updateFilm);
+        validateFilm(newFilm);
+        films.put(newFilm.getId(), newFilm);
+        log.info("Поля фильма успешно обновлены. Id: {}", newFilm.getId());
+        return newFilm;
+
     }
 
     private void validateFilm(Film newFilm) {
@@ -76,15 +78,6 @@ public class FilmService {
         updateFilm.setDuration(film.getDuration());
 
         return updateFilm;
-    }
-
-    private long getNextIdFilm() {
-        long currentMaxId = films.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
     }
 }
 

@@ -18,6 +18,7 @@ import java.util.Map;
 @Service
 public class UserService {
     private final Map<Long, User> users = new HashMap<>();
+    private long nextFilmId = 1;
 
     public Collection<User> findAll() {
         log.info("Выполняется получение всех пользователей");
@@ -34,8 +35,8 @@ public class UserService {
                     newUser.getLogin(), newUser.getName());
         }
 
-        newUser.setId(getNextIdUser());
-        users.put(getNextIdUser(), newUser);
+        long filmId = nextFilmId++;
+        users.put(filmId, newUser);
         log.info("Пользователь успешно создан. Id: {}, login: {}", newUser.getId(), newUser.getLogin());
         return newUser;
     }
@@ -47,17 +48,18 @@ public class UserService {
             throw new ValidationException("Id пользователя не может быть null");
         }
 
-        if (users.containsKey(updateUser.getId())) {
-            checkDataDuplication(updateUser);
-            User newUser = updateUserFields(updateUser);
-            validateUser(newUser);
-            log.info("Поля пользователя успешно обновлены. Id: {}", newUser.getId());
-            users.put(newUser.getId(), newUser);
-            return newUser;
-        } else {
-            log.error("Ошибка валидации при обновлении пользователя: id пользователя не найден. Id: {}", updateUser.getId());
-            throw new NotFoundException("Пользователь с id = " + updateUser.getId() + " не найден.");
+        if (!users.containsKey(updateUser.getId())) {
+            log.error("Ошибка валидации при обновлении фильма: ID фильма не найден. ID: {}", updateUser.getId());
+            throw new NotFoundException("Фильм с id = " + updateUser.getId() + " не найден.");
         }
+
+        checkDataDuplication(updateUser);
+        User newUser = updateUserFields(updateUser);
+        validateUser(newUser);
+        log.info("Поля пользователя успешно обновлены. Id: {}", newUser.getId());
+        users.put(newUser.getId(), newUser);
+        return newUser;
+
     }
 
     private void validateUser(User newUser) {
@@ -90,23 +92,13 @@ public class UserService {
     private User updateUserFields(User user) {
         User updateUser = users.get(user.getId());
 
-            updateUser.setEmail(user.getEmail());
-            updateUser.setLogin(user.getLogin());
-            if (user.getName() != null) {
-                updateUser.setName(user.getName());
-            }
-            updateUser.setBirthday(user.getBirthday());
+        updateUser.setEmail(user.getEmail());
+        updateUser.setLogin(user.getLogin());
+        if (user.getName() != null) {
+            updateUser.setName(user.getName());
+        }
+        updateUser.setBirthday(user.getBirthday());
 
         return updateUser;
-    }
-
-
-    private long getNextIdUser() {
-        long currentMaxId = users.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
     }
 }

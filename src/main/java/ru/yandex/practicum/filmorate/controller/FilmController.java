@@ -14,18 +14,18 @@ import java.util.Collection;
 public class FilmController {
     private final FilmService filmService;
 
-        @GetMapping
-        public Collection<Film> findAll() {
-            return filmService.findAll();
-        }
+    @GetMapping
+    public Collection<Film> findAll() {
+        return filmService.findAll();
+    }
 
-        @PostMapping
-        public Film createFilm(@Valid @RequestBody Film film) {
-            return filmService.create(film);
-        }
+    @PostMapping
+    public Film createFilm(@Valid @RequestBody Film film) {
+        return filmService.create(film);
+    }
 
-        @PutMapping
-        public Film updateFilm(@Valid @RequestBody Film newFilm) {
-            return filmService.update(newFilm);
-        }
+    @PutMapping
+    public Film updateFilm(@Valid @RequestBody Film newFilm) {
+        return filmService.update(newFilm);
+    }
 }
