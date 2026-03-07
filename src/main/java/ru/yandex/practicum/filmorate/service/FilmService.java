@@ -29,8 +29,8 @@ public class FilmService {
     public Film create(Film newFilm) {
         log.info("Создание фильма: name = {}", newFilm.getName());
         validateFilm(newFilm);
-        long userId = nextUserId++;
-        films.put(userId, newFilm);
+        newFilm.setId(nextUserId++);
+        films.put(newFilm.getId(), newFilm);
         log.info("Фильм успешно создан. Id: {}, name: {}", newFilm.getId(), newFilm.getName());
         return newFilm;
     }

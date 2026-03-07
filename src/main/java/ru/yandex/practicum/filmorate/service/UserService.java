@@ -35,8 +35,8 @@ public class UserService {
                     newUser.getLogin(), newUser.getName());
         }
 
-        long filmId = nextFilmId++;
-        users.put(filmId, newUser);
+        newUser.setId(nextFilmId++);
+        users.put(newUser.getId(), newUser);
         log.info("Пользователь успешно создан. Id: {}, login: {}", newUser.getId(), newUser.getLogin());
         return newUser;
     }
