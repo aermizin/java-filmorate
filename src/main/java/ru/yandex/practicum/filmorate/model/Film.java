@@ -10,12 +10,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class Film {
+
     private Long id;
 
     @NotBlank(message = "Название фильма не может быть null или пустым.")
@@ -31,4 +34,8 @@ public class Film {
     @NotNull(message = "Продолжительность фильма не может быть null.")
     @Positive(message = "Продолжительность фильма должна быть положительным числом.")
     private Integer duration;
+
+    @Builder.Default
+    private Set<Long> likes = new HashSet<>();
 }
+
