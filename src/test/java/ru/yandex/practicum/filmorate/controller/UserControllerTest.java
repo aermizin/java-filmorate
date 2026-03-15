@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
 
 import java.time.LocalDate;
 import java.util.Set;
@@ -16,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class UserControllerTest {
     private UserController userController;
+    private InMemoryUserStorage userStorage;
     private UserService userService;
     private Validator validator;
 
@@ -25,8 +27,9 @@ public class UserControllerTest {
             validator = factory.getValidator();
         }
 
-        userService = new UserService();
-        userController = new UserController(userService);
+        userStorage = new InMemoryUserStorage();
+        userService = new UserService(userStorage);
+        userController = new UserController(userStorage, userService);
     }
 
     @Test
@@ -144,7 +147,7 @@ public class UserControllerTest {
         String message = violations.iterator().next().getMessage();
 
         assertEquals(1, violations.size(), "Обнаружено 1 нарушение валидации");
-        assertEquals("День рождение пользователя не может быть в будущем.", message);
+        assertEquals("День рождения пользователя не может быть в будущем.", message);
     }
 
     @Test
@@ -160,6 +163,6 @@ public class UserControllerTest {
         String message = violations.iterator().next().getMessage();
 
         assertEquals(1, violations.size(), "Обнаружено 1 нарушение валидации");
-        assertEquals("День рождение пользователя не может быть null.", message);
+        assertEquals("День рождения пользователя не может быть null.", message);
     }
 }

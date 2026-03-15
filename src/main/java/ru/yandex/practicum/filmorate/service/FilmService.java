@@ -2,82 +2,87 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.DuplicatedDataException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
 
-import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
-@RequiredArgsConstructor
 @Service
+@RequiredArgsConstructor
 public class FilmService {
-    private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
-    private final Map<Long, Film> films = new HashMap<>();
-    private long nextUserId = 1;
+    private final InMemoryFilmStorage filmStorage;
+    private final InMemoryUserStorage userStorage;
 
-    public Collection<Film> findAll() {
-        log.info("Выполняется получение всех фильмов");
-        return films.values();
+    public Film getFilmById(long filmId) {
+        Film film = filmStorage.getFilms().get(filmId);
+
+        if (film == null) {
+            String message = "Фильм с id=" + filmId + " не найден";
+            log.warn(message);
+            throw new NotFoundException(message);
+        }
+        log.info("Успешно получен фильм с id={}", filmId);
+        return film;
     }
 
-    public Film create(Film newFilm) {
-        log.info("Создание фильма: name = {}", newFilm.getName());
-        validateFilm(newFilm);
-        newFilm.setId(nextUserId++);
-        films.put(newFilm.getId(), newFilm);
-        log.info("Фильм успешно создан. Id: {}, name: {}", newFilm.getId(), newFilm.getName());
-        return newFilm;
+    public void addFilmLike(long filmId, long userId) {
+        validateFilmAndUserExistence(filmId, userId);
+
+        Film film = filmStorage.getFilms().get(filmId);
+
+        if (film.getLikes().contains(userId)) {
+            log.warn("Пользователь с id={} ранее уже ставил like ", userId);
+            throw new DuplicatedDataException("Пользователь с id = " + userId + " ранее уже ставил like фильму с name = "
+                    + film.getName() + ".");
+        }
+
+        film.getLikes().add(userId);
+        log.info("Пользователь с id={} поставил лайк фильму с id={}", userId, filmId);
     }
 
-    public Film update(Film updateFilm) {
-        if (updateFilm.getId() == null) {
-            log.error("Ошибка валидации при обновлении фильма: ID не может быть null. Название фильма: {}",
-                    updateFilm.getName());
-            throw new ValidationException("Id фильма не может быть null");
-        }
+    public void deleteFilmLike(long filmId, long userId) {
+        validateFilmAndUserExistence(filmId, userId);
 
-        if (!films.containsKey(updateFilm.getId())) {
-            log.error("Ошибка валидации при обновлении фильма: ID фильма не найден. ID: {}", updateFilm.getId());
-            throw new NotFoundException("Фильм с id = " + updateFilm.getId() + " не найден.");
-        }
-
-        Film newFilm = updateFilmFields(updateFilm);
-        validateFilm(newFilm);
-        films.put(newFilm.getId(), newFilm);
-        log.info("Поля фильма успешно обновлены. Id: {}", newFilm.getId());
-        return newFilm;
-
+        Film film = filmStorage.getFilms().get(filmId);
+        film.getLikes().remove(userId);
+        log.info("Пользователь с id={} удалил лайк у фильма с id={}", userId, filmId);
     }
 
-    private void validateFilm(Film newFilm) {
-        if (newFilm.getDescription().length() > 200) {
-            log.error("Ошибка валидации: описание  фильма не должно превышать 200 символов. Название фильма: {}",
-                    newFilm.getName());
-            throw new ValidationException("Описание фильма не должно превышать 200 символов.");
-        }
+    public Collection<Film> getPopularFilms(int count) {
+        List<Film> popularFilms = new ArrayList<>(filmStorage.getFilms().values());
 
-        if (newFilm.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
-            log.error("Ошибка валидации: дата выпуска фильма должна быть не раньше 28 декабря 1895 года. Название фильма: {}",
-                    newFilm.getName());
-            throw new ValidationException("Дата выпуска фильма должна быть не раньше 28 декабря 1895 года.");
-        }
+        popularFilms.sort(Comparator.comparing((Film film) -> film.getLikes().size()).reversed());
+        log.debug("Успешно отсортирован список рейтинговых фильмов состоящий из {} фильмов", popularFilms.size());
+        return popularFilms.stream()
+                .limit(count)
+                .collect(Collectors.toList());
     }
 
-    private Film updateFilmFields(Film film) {
-        Film updateFilm = films.get(film.getId());
+    private void validateFilmAndUserExistence(long filmId, long userId) {
 
-        updateFilm.setName(film.getName());
-        updateFilm.setDescription(film.getDescription());
-        updateFilm.setReleaseDate(film.getReleaseDate());
-        updateFilm.setDuration(film.getDuration());
+        if (!filmStorage.getFilms().containsKey(filmId)) {
+            String message = "Фильм с id=" + filmId + " не найден";
+            log.warn(message);
+            throw new NotFoundException(message);
+        }
 
-        return updateFilm;
+        if (!userStorage.getUsers().containsKey(userId)) {
+            String message = "Пользователь с id=" + userId + " не найден";
+            log.warn(message);
+            throw new NotFoundException(message);
+        }
     }
 }
 
