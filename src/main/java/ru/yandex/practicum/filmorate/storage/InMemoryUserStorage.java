@@ -17,7 +17,7 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-public class InMemoryUserStorage implements UserStorage{
+public class InMemoryUserStorage implements UserStorage {
     @Getter
     private final Map<Long, User> users = new HashMap<>();
     private long nextFilmId = 1;
