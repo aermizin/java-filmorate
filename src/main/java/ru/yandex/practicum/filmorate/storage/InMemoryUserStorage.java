@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.storage;
 
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,7 +16,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Component
 public class InMemoryUserStorage implements UserStorage {
-    @Getter
     private final Map<Long, User> users = new HashMap<>();
     private long nextFilmId = 1;
 
@@ -56,12 +54,24 @@ public class InMemoryUserStorage implements UserStorage {
             throw new NotFoundException("Фильм с id = " + updateUser.getId() + " не найден.");
         }
 
-        //checkDataDuplication(updateUser);
         User newUser = updateUserFields(updateUser);
         log.info("Поля пользователя успешно обновлены. Id: {}", newUser.getId());
         users.put(newUser.getId(), newUser);
         return newUser;
 
+    }
+
+    @Override
+    public User getUserById(Long userId) {
+        User user = users.get(userId);
+
+        if (user == null) {
+            String message = "Пользователь с id=" + userId + " не найден";
+            log.warn(message);
+            throw new NotFoundException(message);
+        }
+
+        return user;
     }
 
     private void checkDataDuplication(User profile) {
@@ -91,7 +101,9 @@ public class InMemoryUserStorage implements UserStorage {
         updateUser.setLogin(user.getLogin());
         if (user.getName() != null) {
             updateUser.setName(user.getName());
+            log.info("Имя пользователя обновлено на: {}", updateUser.getName());
         }
+
         updateUser.setBirthday(user.getBirthday());
 
         return updateUser;

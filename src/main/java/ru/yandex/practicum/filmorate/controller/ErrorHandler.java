@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -13,6 +14,7 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class ErrorHandler {
 
@@ -45,7 +47,7 @@ public class ErrorHandler {
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        //log.warn("Ошибки валидации: {}", errors);
+        log.warn("Ошибки валидации: {}", errors);
         return errors;
     }
 

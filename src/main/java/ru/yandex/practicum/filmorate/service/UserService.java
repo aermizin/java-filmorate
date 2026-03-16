@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.DuplicatedDataException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,26 +15,29 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+    private final UserStorage userStorage;
 
-    private final InMemoryUserStorage userStorage;
+    public User create(User newUser) {
+        return userStorage.create(newUser);
+    }
 
     public User getUserById(long userId) {
-        User user = userStorage.getUsers().get(userId);
+        return userStorage.getUserById(userId);
+    }
 
-        if (user == null) {
-            String message = "Пользователь с id=" + userId + " не найден";
-            log.warn(message);
-            throw new NotFoundException(message);
-        }
+    public Collection<User> findAll() {
+        return userStorage.findAll();
+    }
 
-        return user;
+    public User update(User updateUser) {
+        return userStorage.update(updateUser);
     }
 
     public void addFriend(long userId, long friendId) {
         validateUsersExistence(userId, friendId);
 
-        User user = userStorage.getUsers().get(userId);
-        User friendUser = userStorage.getUsers().get(friendId);
+        User user = userStorage.getUserById(userId);
+        User friendUser = userStorage.getUserById(friendId);
 
         if (user.getFriends().contains(friendId) || friendUser.getFriends().contains(userId)) {
             String message = "Дружба существует между двумя пользователями " + userId + " и " + friendId;
@@ -50,8 +53,8 @@ public class UserService {
     public void deleteFriend(long userId, long friendId) {
         validateUsersExistence(userId, friendId);
 
-        User user = userStorage.getUsers().get(userId);
-        User friendUser = userStorage.getUsers().get(friendId);
+        User user = userStorage.getUserById(userId);
+        User friendUser = userStorage.getUserById(friendId);
 
         user.getFriends().remove(friendId);
         friendUser.getFriends().remove(userId);
@@ -59,7 +62,7 @@ public class UserService {
     }
 
     public Collection<User> findAllFriend(long userId) {
-        User user = userStorage.getUsers().get(userId);
+        User user = userStorage.getUserById(userId);
 
         if (user == null) {
             String message = "Пользователь с id = " + userId + " не найден";
@@ -75,7 +78,7 @@ public class UserService {
         }
 
         return friendsId.stream()
-                .map(friendId -> userStorage.getUsers().get(friendId))
+                .map(userStorage::getUserById)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
@@ -83,8 +86,8 @@ public class UserService {
     public Collection<User> getCommonFriends(long userId, long otherUserId) {
         validateUsersExistence(userId, otherUserId);
 
-        User user = userStorage.getUsers().get(userId);
-        User otherUser = userStorage.getUsers().get(otherUserId);
+        User user = userStorage.getUserById(userId);
+        User otherUser = userStorage.getUserById(otherUserId);
 
         Set<Long> friendsOfUserId = new HashSet<>(user.getFriends());
         Set<Long> friendsOfOtherUserId = new HashSet<>(otherUser.getFriends());
@@ -96,23 +99,13 @@ public class UserService {
 
         return friendsOfUserId.stream()
                 .filter(friendsOfOtherUserId::contains)
-                .map(id -> userStorage.getUsers().get(id))
+                .map(userStorage::getUserById)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
     private void validateUsersExistence(long userId, long otherUserId) {
-
-        if (!userStorage.getUsers().containsKey(userId)) {
-            String message = "Пользователь с id = " + userId + " не найден.";
-            log.warn(message);
-            throw new NotFoundException(message);
-        }
-
-        if (!userStorage.getUsers().containsKey(otherUserId)) {
-            String message = "Пользователь с id = " + otherUserId + " не найден.";
-            log.warn(message);
-            throw new NotFoundException(message);
-        }
+        userStorage.getUserById(userId);
+        userStorage.getUserById(otherUserId);
     }
 }

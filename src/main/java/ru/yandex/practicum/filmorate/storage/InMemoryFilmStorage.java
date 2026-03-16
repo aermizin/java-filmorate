@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.storage;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
@@ -16,14 +15,16 @@ import java.util.Map;
 @Component
 public class InMemoryFilmStorage implements FilmStorage {
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
+    private static final int MAX_NUMBERS_OF_DESCRIPTIONS = 200;
 
-    @Getter
+
     private final Map<Long, Film> films = new HashMap<>();
     private long nextUserId = 1;
 
     @Override
     public Collection<Film> findAll() {
-        log.info("Выполняется получение всех фильмов");
+        int filmCount = films.size();
+        log.info("Получено всех фильмов: {}", filmCount);
         return films.values();
     }
 
@@ -58,8 +59,21 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     }
 
+    @Override
+    public Film getFilmById(Long filmId) {
+        Film film = films.get(filmId);
+
+        if (film == null) {
+            String message = "Фильм с id=" + filmId + " не найден";
+            log.warn(message);
+            throw new NotFoundException(message);
+        }
+        log.info("Успешно получен фильм с id={}", filmId);
+        return film;
+    }
+
     private void validateFilm(Film newFilm) {
-        if (newFilm.getDescription().length() > 200) {
+        if (newFilm.getDescription().length() > MAX_NUMBERS_OF_DESCRIPTIONS) {
             log.error("Ошибка валидации: описание  фильма не должно превышать 200 символов. Название фильма: {}",
                     newFilm.getName());
             throw new ValidationException("Описание фильма не должно превышать 200 символов.");
