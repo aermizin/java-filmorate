@@ -4,10 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.DuplicatedDataException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -18,10 +20,14 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class FilmService {
+    private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
+    private static final int MAX_NUMBERS_OF_DESCRIPTIONS = 200;
+
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
 
     public Film create(Film film) {
+        validateFilm(film);
         return filmStorage.create(film);
     }
 
@@ -34,6 +40,7 @@ public class FilmService {
     }
 
     public Film update(Film newFilm) {
+        validateFilm(newFilm);
         return filmStorage.update(newFilm);
     }
 
@@ -73,6 +80,20 @@ public class FilmService {
     private void validateFilmAndUserExistence(long filmId, long userId) {
         filmStorage.getFilmById(filmId);
         userStorage.getUserById(userId);
+    }
+
+    private void validateFilm(Film newFilm) {
+        if (newFilm.getDescription().length() > MAX_NUMBERS_OF_DESCRIPTIONS) {
+            log.error("Ошибка валидации: описание  фильма не должно превышать 200 символов. Название фильма: {}",
+                    newFilm.getName());
+            throw new ValidationException("Описание фильма не должно превышать 200 символов.");
+        }
+
+        if (newFilm.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
+            log.error("Ошибка валидации: дата выпуска фильма должна быть не раньше 28 декабря 1895 года. Название фильма: {}",
+                    newFilm.getName());
+            throw new ValidationException("Дата выпуска фильма должна быть не раньше 28 декабря 1895 года.");
+        }
     }
 }
 

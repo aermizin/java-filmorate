@@ -6,7 +6,6 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,10 +13,6 @@ import java.util.Map;
 @Slf4j
 @Component
 public class InMemoryFilmStorage implements FilmStorage {
-    private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
-    private static final int MAX_NUMBERS_OF_DESCRIPTIONS = 200;
-
-
     private final Map<Long, Film> films = new HashMap<>();
     private long nextUserId = 1;
 
@@ -31,7 +26,6 @@ public class InMemoryFilmStorage implements FilmStorage {
     @Override
     public Film create(Film newFilm) {
         log.info("Создание фильма: name = {}", newFilm.getName());
-        validateFilm(newFilm);
         newFilm.setId(nextUserId++);
         films.put(newFilm.getId(), newFilm);
         log.info("Фильм успешно создан. Id: {}, name: {}", newFilm.getId(), newFilm.getName());
@@ -52,7 +46,6 @@ public class InMemoryFilmStorage implements FilmStorage {
         }
 
         Film newFilm = updateFilmFields(updateFilm);
-        validateFilm(newFilm);
         films.put(newFilm.getId(), newFilm);
         log.info("Поля фильма успешно обновлены. Id: {}", newFilm.getId());
         return newFilm;
@@ -70,20 +63,6 @@ public class InMemoryFilmStorage implements FilmStorage {
         }
         log.info("Успешно получен фильм с id={}", filmId);
         return film;
-    }
-
-    private void validateFilm(Film newFilm) {
-        if (newFilm.getDescription().length() > MAX_NUMBERS_OF_DESCRIPTIONS) {
-            log.error("Ошибка валидации: описание  фильма не должно превышать 200 символов. Название фильма: {}",
-                    newFilm.getName());
-            throw new ValidationException("Описание фильма не должно превышать 200 символов.");
-        }
-
-        if (newFilm.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
-            log.error("Ошибка валидации: дата выпуска фильма должна быть не раньше 28 декабря 1895 года. Название фильма: {}",
-                    newFilm.getName());
-            throw new ValidationException("Дата выпуска фильма должна быть не раньше 28 декабря 1895 года.");
-        }
     }
 
     private Film updateFilmFields(Film film) {

@@ -1,9 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PastOrPresent;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +15,6 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Film {
-
     private Long id;
 
     @NotBlank(message = "Название фильма не может быть null или пустым.")
@@ -26,6 +22,12 @@ public class Film {
 
     @NotBlank(message = "Описание фильма не может быть null или пустым.")
     private String description;
+
+    @NotEmpty(message = "Фильм должен иметь хотя бы один жанр")
+    private Set<Genre> genres = new HashSet<>();
+
+    @NotBlank(message = "Рейтинг фильма не может быть null или пустым.")
+    private Rating rating;
 
     @NotNull(message = "Дата выхода фильма не может быть null.")
     @PastOrPresent(message = "Дата выхода фильма не может быть в будущем.")

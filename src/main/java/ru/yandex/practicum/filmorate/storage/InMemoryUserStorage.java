@@ -27,8 +27,6 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User create(User newUser) {
-        checkDataDuplication(newUser);
-
         if (newUser.getName() == null) {
             newUser.setName(newUser.getLogin());
             log.info("У пользователя с login = '{}' отсутствовало name, присвоено name = '{}'",
@@ -72,26 +70,6 @@ public class InMemoryUserStorage implements UserStorage {
         }
 
         return user;
-    }
-
-    private void checkDataDuplication(User profile) {
-        boolean checkEmailDuplication = users.values()
-                .stream()
-                .anyMatch(user -> profile.getEmail().equals(user.getEmail()));
-
-        if (checkEmailDuplication) {
-            log.error("Ошибка валидации: этот email уже используется. Email: {}", profile.getEmail());
-            throw new DuplicatedDataException("Этот email = " + profile.getEmail() + " уже используется.");
-        }
-
-        boolean checkLoginDuplication = users.values()
-                .stream()
-                .anyMatch(user -> profile.getLogin().equals(user.getLogin()));
-
-        if (checkLoginDuplication) {
-            log.error("Ошибка валидации: этот login уже используется. Login: {}", profile.getLogin());
-            throw new DuplicatedDataException("Этот login = " + profile.getLogin() + " уже используется.");
-        }
     }
 
     private User updateUserFields(User user) {

@@ -12,7 +12,6 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class User {
-
     private Long id;
 
     @Email(message = "Email пользователя должен быть заполнен корректно.")
@@ -29,5 +28,5 @@ public class User {
     private LocalDate birthday;
 
     @Builder.Default
-    private Set<Long> friends = new HashSet<>();
+    private Set<Friendship> friendship = new HashSet<>();
 }

@@ -18,6 +18,7 @@ public class UserService {
     private final UserStorage userStorage;
 
     public User create(User newUser) {
+        checkDataDuplication(newUser);
         return userStorage.create(newUser);
     }
 
@@ -107,5 +108,25 @@ public class UserService {
     private void validateUsersExistence(long userId, long otherUserId) {
         userStorage.getUserById(userId);
         userStorage.getUserById(otherUserId);
+    }
+
+    private void checkDataDuplication(User profile) {
+        boolean checkEmailDuplication = userStorage.findAll()
+                .stream()
+                .anyMatch(user -> profile.getEmail().equals(user.getEmail()));
+
+        if (checkEmailDuplication) {
+            log.error("Ошибка валидации: этот email уже используется. Email: {}", profile.getEmail());
+            throw new DuplicatedDataException("Этот email = " + profile.getEmail() + " уже используется.");
+        }
+
+        boolean checkLoginDuplication = userStorage.findAll()
+                .stream()
+                .anyMatch(user -> profile.getLogin().equals(user.getLogin()));
+
+        if (checkLoginDuplication) {
+            log.error("Ошибка валидации: этот login уже используется. Login: {}", profile.getLogin());
+            throw new DuplicatedDataException("Этот login = " + profile.getLogin() + " уже используется.");
+        }
     }
 }
