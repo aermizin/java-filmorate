@@ -2,7 +2,7 @@
 Бэкенд для сервиса, который работает с фильмами и оценками пользователей, а также возвращает топ-5 фильмов, рекомендованных к просмотру.
 
 # Схема базы данных
-![Схема базы данных](https://raw.githubusercontent.com/aermizin/java-filmorate/main/docs/database_diagrams/diagram.png)
+![Схема базы данных](docs/database_diagrams/diagram.png)
 
 ### Получить список фильмов с жанрами:
 
@@ -19,7 +19,8 @@ JOIN genre g ON fg.genre_id = g.id;```
 
 ---
 
-```SELECT 
+```html
+SELECT 
   r.rating_category, 
   COUNT(*) AS rating_count
 FROM rating r
@@ -30,7 +31,8 @@ GROUP BY r.rating_category;```
 
 ---
 
-```SELECT 
+```html
+SELECT 
   id, 
   email, 
   login, 
@@ -43,7 +45,8 @@ WHERE id = [ID_ПОЛЬЗОВАТЕЛЯ];```
 
 ---
 
-```SELECT 
+```html
+SELECT 
   fl.id AS film_id,
   fl.name AS film_name,
   COUNT(l.id) AS likes_count
@@ -61,29 +64,22 @@ LIMIT 5;```
 
 ---
 
-```SELECT * FROM genre;```
+```html
+SELECT * FROM genre;```
 
 ## Найти фильмы, выпущенные после определённой даты:
 
 ---
 
-```SELECT 
+```html
+SELECT 
   id, 
   name, 
   releaseDate
 FROM films 
 WHERE releaseDate > '[ДАТА]';```
 
-### Получить рейтинг фильма:
 
----
-
-```SELECT 
-  r.rating_category, 
-  COUNT(*) AS rating_count
-FROM rating r
-WHERE r.film_id = [ID_ФИЛЬМА]
-GROUP BY r.rating_category;```
 
 
 
