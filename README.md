@@ -1,14 +1,12 @@
-<h1> java-filmorate
+# java-filmorate
 Бэкенд для сервиса, который работает с фильмами и оценками пользователей, а также возвращает топ-5 фильмов, рекомендованных к просмотру.
 
-<h1> Схема базы данных
+# Схема базы данных
 ![Схема базы данных](docs/database_diagrams/diagram.png)
 
 <h3> Получить список фильмов с жанрами:
 
----
-
-```sql
+```SQL
 SELECT 
   fl.name AS film_name, 
   g.genre_name
@@ -16,11 +14,9 @@ FROM films fl
 JOIN film_genres fg ON fl.id = fg.film_id
 JOIN genre g ON fg.genre_id = g.id;```
 
-<h3> Получить рейтинг фильма:
+Получить рейтинг фильма:
 
----
-
-```sql
+```SQL
 SELECT 
   r.rating_category, 
   COUNT(*) AS rating_count
@@ -28,11 +24,9 @@ FROM rating r
 WHERE r.film_id = [ID_ФИЛЬМА]
 GROUP BY r.rating_category;```
 
-<h3> Получить информацию о пользователе:
+Получить информацию о пользователе:
 
----
-
-```sql
+```SQL
 SELECT 
   id, 
   email, 
@@ -42,11 +36,9 @@ SELECT
 FROM users 
 WHERE id = [ID_ПОЛЬЗОВАТЕЛЯ];```
 
-<h3> Получить топ‑5 фильмов по количеству лайков
+Получить топ‑5 фильмов по количеству лайков
 
----
-
-```sql
+```SQL
 SELECT 
   fl.id AS film_id,
   fl.name AS film_name,
@@ -61,18 +53,14 @@ ORDER BY
   likes_count DESC
 LIMIT 5;```
 
-<h3> Получить все жанры, представленные в базе данных:
+Получить все жанры, представленные в базе данных:
 
----
-
-```sql
+```SQL
 SELECT * FROM genre;```
 
-<h3> Найти фильмы, выпущенные после определённой даты:
+Найти фильмы, выпущенные после определённой даты:
 
----
-
-```sql
+```SQL
 SELECT 
   id, 
   name, 
