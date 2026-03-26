@@ -12,7 +12,8 @@ SELECT
   g.genre_name
 FROM films fl
 JOIN film_genres fg ON fl.id = fg.film_id
-JOIN genre g ON fg.genre_id = g.id;```
+JOIN genre g ON fg.genre_id = g.id;
+```
 
 Получить рейтинг фильма:
 
@@ -22,7 +23,8 @@ SELECT
   COUNT(*) AS rating_count
 FROM rating r
 WHERE r.film_id = [ID_ФИЛЬМА]
-GROUP BY r.rating_category;```
+GROUP BY r.rating_category;
+```
 
 Получить информацию о пользователе:
 
@@ -34,7 +36,8 @@ SELECT
   name, 
   birthday
 FROM users 
-WHERE id = [ID_ПОЛЬЗОВАТЕЛЯ];```
+WHERE id = [ID_ПОЛЬЗОВАТЕЛЯ];
+```
 
 Получить топ‑5 фильмов по количеству лайков
 
@@ -51,12 +54,14 @@ GROUP BY
   fl.id, fl.name
 ORDER BY 
   likes_count DESC
-LIMIT 5;```
+LIMIT 5;
+```
 
 Получить все жанры, представленные в базе данных:
 
 ```SQL
-SELECT * FROM genre;```
+SELECT * FROM genre;
+```
 
 Найти фильмы, выпущенные после определённой даты:
 
@@ -66,4 +71,5 @@ SELECT
   name, 
   releaseDate
 FROM films 
-WHERE releaseDate > '[ДАТА]';```
+WHERE releaseDate > '[ДАТА]';
+```
