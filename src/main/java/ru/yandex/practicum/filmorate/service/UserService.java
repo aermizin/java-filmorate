@@ -3,11 +3,13 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.DuplicatedDataException;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.exception.*;
+import ru.yandex.practicum.filmorate.storage.FriendshipStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.model.Friendship;
+import ru.yandex.practicum.filmorate.model.User;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -16,117 +18,113 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserService {
     private final UserStorage userStorage;
+    private final FriendshipStorage friendshipStorage;
 
-    public User create(User newUser) {
-        checkDataDuplication(newUser);
-        return userStorage.create(newUser);
+    public Collection<User> getUsers() {
+        Collection<User> usersAll = userStorage.findAll();
+        log.info("Успешно получено {} пользователей", usersAll.size());
+        return usersAll;
     }
 
     public User getUserById(long userId) {
-        return userStorage.getUserById(userId);
+        Optional<User> userOpt = userStorage.findById(userId);
+
+        return userOpt.orElseThrow(() -> {
+            log.warn("Пользователь с id = {} не найден", userId);
+            return new UserNotFoundException(userId);
+        });
     }
 
-    public Collection<User> findAll() {
-        return userStorage.findAll();
+    public User create(User user) {
+        checkDataDuplication(user);
+        User newUser = userStorage.create(user);
+        log.info("Создан новый пользователь c id = {}", user.getId());
+        return newUser;
     }
 
-    public User update(User updateUser) {
-        return userStorage.update(updateUser);
+    public User update(User user) {
+        try {
+            User updateUser = userStorage.update(user);
+            log.info("Обновлены поля пользователя c id = {}", updateUser.getId());
+            return updateUser;
+        } catch (NotFoundException e) {
+            log.warn("Не удалось обновить фильм с id = {}", user.getId());
+            throw new UserNotFoundException(user.getId());
+        }
     }
 
     public void addFriend(long userId, long friendId) {
-        validateUsersExistence(userId, friendId);
-
-        User user = userStorage.getUserById(userId);
-        User friendUser = userStorage.getUserById(friendId);
-
-        if (user.getFriends().contains(friendId) || friendUser.getFriends().contains(userId)) {
-            String message = "Дружба существует между двумя пользователями " + userId + " и " + friendId;
-            log.warn(message);
-            throw new DuplicatedDataException(message);
+        if (userId == friendId) {
+            throw new ValidationException("Пользователь не может добавить самого себя в друзья");
         }
 
-        user.getFriends().add(friendId);
-        friendUser.getFriends().add(userId);
-        log.info("Друг с id={} успешно добавлен в список друзей пользователя id={}", friendId, userId);
+        getUserById(friendId);
+
+        Optional<Friendship> friendshipOpt = friendshipStorage.findById(userId, friendId);
+        if (friendshipOpt.isPresent()) {
+            throw new ValidationException("Пользователь уже добавил в друзья ");
+        }
+
+        Friendship newFriendship = Friendship.builder()
+                .requesterId(userId)
+                .friendId(friendId)
+                .createdAt(LocalDateTime.now())
+                .build();
+        friendshipStorage.create(newFriendship);
     }
 
     public void deleteFriend(long userId, long friendId) {
-        validateUsersExistence(userId, friendId);
+        getUserById(friendId);
+        getUserById(userId);
 
-        User user = userStorage.getUserById(userId);
-        User friendUser = userStorage.getUserById(friendId);
-
-        user.getFriends().remove(friendId);
-        friendUser.getFriends().remove(userId);
-        log.info("Пользователь с id={} удалил дружбу с пользователем id={}", userId, friendId);
+        Optional<Friendship> friendshipOpt = friendshipStorage.findById(userId, friendId);
+        if (friendshipOpt.isEmpty()) {
+            return;
+        }
+        friendshipStorage.delete(userId, friendId);
     }
 
-    public Collection<User> findAllFriend(long userId) {
-        User user = userStorage.getUserById(userId);
-
-        if (user == null) {
-            String message = "Пользователь с id = " + userId + " не найден";
-            log.error(message);
-            throw new NotFoundException(message);
-        }
-
-        Set<Long> friendsId = new HashSet<>(user.getFriends());
-
-        if (friendsId.isEmpty()) {
-            log.info("Список друзей пользователя с id={} пуст", userId);
-            return Collections.emptySet();
-        }
-
-        return friendsId.stream()
-                .map(userStorage::getUserById)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+    public Collection<User> findAllFriends(long userId) {
+        getUserById(userId);
+        log.info("Запрос на получение списка друзей пользователя с id={}", userId);
+        Collection<User> allFriends = friendshipStorage.findAllFriends(userId);
+        return allFriends;
     }
 
     public Collection<User> getCommonFriends(long userId, long otherUserId) {
-        validateUsersExistence(userId, otherUserId);
+        log.info("Запрос на поиск общих друзей: userId={}, otherUserId={}", userId, otherUserId);
 
-        User user = userStorage.getUserById(userId);
-        User otherUser = userStorage.getUserById(otherUserId);
+        Collection<User> friendsUser = friendshipStorage.findAllFriends(userId);
+        Collection<User> friendsOtherUser = friendshipStorage.findAllFriends(otherUserId);
 
-        Set<Long> friendsOfUserId = new HashSet<>(user.getFriends());
-        Set<Long> friendsOfOtherUserId = new HashSet<>(otherUser.getFriends());
-
-        if (friendsOfUserId.isEmpty()) {
-            log.info("У пользователя с id={} нет общих друзей с пользователем {}", userId, otherUserId);
-            return Collections.emptySet();
-        }
-
-        return friendsOfUserId.stream()
-                .filter(friendsOfOtherUserId::contains)
-                .map(userStorage::getUserById)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        return friendsUser.stream()
+                .filter(friendsOtherUser::contains)
+                .collect(Collectors.toSet());
     }
 
-    private void validateUsersExistence(long userId, long otherUserId) {
-        userStorage.getUserById(userId);
-        userStorage.getUserById(otherUserId);
+    private void checkDataDuplication(User user) {
+        Optional<User> existingByEmail = userStorage.findByEmail(user.getEmail());
+        if (existingByEmail.isPresent()) {
+            log.warn("Данный имейл уже используется. Email: {}", user.getEmail());
+            throw new DuplicatedDataException("данный имейл уже используется");
+        }
+
+        Optional<User> existingByLogin = userStorage.findByLogin(user.getLogin());
+        if (existingByLogin.isPresent()) {
+            log.warn("Данный логин уже используется. Login: {}", user.getLogin());
+            throw new DuplicatedDataException("данный логин уже используется");
+        }
     }
 
-    private void checkDataDuplication(User profile) {
-        boolean checkEmailDuplication = userStorage.findAll()
-                .stream()
-                .anyMatch(user -> profile.getEmail().equals(user.getEmail()));
 
-        if (checkEmailDuplication) {
-            log.error("Ошибка валидации: этот email уже используется. Email: {}", profile.getEmail());
-            throw new DuplicatedDataException("Этот email = " + profile.getEmail() + " уже используется.");
-        }
 
-        boolean checkLoginDuplication = userStorage.findAll()
-                .stream()
-                .anyMatch(user -> profile.getLogin().equals(user.getLogin()));
-
-        if (checkLoginDuplication) {
-            log.error("Ошибка валидации: этот login уже используется. Login: {}", profile.getLogin());
-            throw new DuplicatedDataException("Этот login = " + profile.getLogin() + " уже используется.");
-        }
+    private void createNewFriendshipRequest(long userId, long friendId) {
+        Friendship newFriendship = Friendship.builder()
+                .requesterId(userId)
+                .friendId(friendId)
+                .createdAt(LocalDateTime.now())
+                .build();
+        friendshipStorage.create(newFriendship);
     }
 }
+

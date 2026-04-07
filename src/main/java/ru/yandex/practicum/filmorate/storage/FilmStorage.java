@@ -1,16 +1,11 @@
 package ru.yandex.practicum.filmorate.storage;
 
-
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 
-import java.util.Collection;
 
-public interface FilmStorage {
-    Collection<Film> findAll();
+import java.util.Set;
 
-    Film create(Film newFilm);
-
-    Film update(Film updateFilm);
-
-    Film getFilmById(Long id);
+public interface FilmStorage extends BaseStorage<Film> {
+    Set<Genre> findGenresByFilmId(Long filmId);
 }

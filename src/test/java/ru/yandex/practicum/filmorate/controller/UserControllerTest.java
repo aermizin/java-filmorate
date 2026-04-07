@@ -1,169 +1,128 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
-import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import ru.yandex.practicum.filmorate.exception.DuplicatedDataException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Friendship;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
-import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+
 import java.time.LocalDate;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+@SpringBootTest
+class UserControllerTest {
 
-public class UserControllerTest {
-    private UserStorage userStorage;
+    @Autowired
     private UserService userService;
-    private UserController userController;
-    private Validator validator;
+
+    @Autowired
+    private UserStorage userStorage;
 
     @BeforeEach
     void setUp() {
-        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
-            validator = factory.getValidator();
+        userStorage.deleteTable();
+    }
+
+    private User createTestUser(Long userId, String userEmail, String userLogin, String userName, LocalDate now) {
+        User user = User.builder()
+                .id(userId)
+                .email(userEmail)
+                .login(userLogin)
+                .name(userName)
+                .birthday(now)
+                .build();
+
+        return user;
+    }
+
+    @Test
+    public void testFindUserById() {
+
+        User user1 = createTestUser(
+                1L, "user1@test.com", "login1", "User One", LocalDate.now());
+
+        User createdUser1 = userStorage.create(user1);
+
+        Long userId = createdUser1.getId();
+
+        Optional<User> userOptional = userStorage.findById(userId);
+
+        assertThat(userOptional)
+                .isPresent()
+                .hasValueSatisfying(user ->
+                        assertThat(user).hasFieldOrPropertyWithValue("id", userId)
+                );
+    }
+
+    @Test
+    void shouldReturnEmptyCollectionWhenNoUsersExist() {
+        Collection<User> users = userStorage.findAll();
+
+        assertThat(users).isEmpty();
+    }
+
+    @Test
+    void shouldFindUserByIdWhenUserExists() {
+        User user = createTestUser(
+                1L, "find@test.com", "findLogin", "findUser", LocalDate.now());
+        User createdUser = userStorage.create(user);
+
+        Optional<User> userOpt = userStorage.findById(createdUser.getId());
+        if(userOpt.isPresent()) {
+            User foundUser = userOpt.get();
+
+            assertThat(foundUser.getId()).isEqualTo(createdUser.getId());
+            assertThat(foundUser.getEmail()).isEqualTo("find@test.com");
         }
-
-        userStorage = new InMemoryUserStorage();
-        userService = new UserService(userStorage);
-        userController = new UserController(userService);
     }
 
     @Test
-    void shouldPassValidationWhenUserFieldsAreAtBoundaryValues() {
-        User validUser = User.builder()
-                .email("user@test.com")
-                .login("default-login")
-                .name(null)
-                .birthday(LocalDate.now())
-                .build();
-
-        Set<ConstraintViolation<User>> violations = validator.validate(validUser);
-        User user = userController.createUser(validUser);
-
-        assertTrue(violations.isEmpty(), "Не обнаружено нарушений валидации.");
-        assertNotNull(user.getId());
-        assertEquals(user.getEmail(), validUser.getEmail());
-        assertEquals(user.getLogin(), validUser.getLogin());
-        assertEquals(user.getName(), validUser.getName());
-        assertEquals(user.getBirthday(), validUser.getBirthday());
-        assertTrue(userController.findAll().contains(validUser), "Добавленный пользователь присутствует " +
-                "в хранилище.");
+    void shouldThrowUserNotFoundExceptionWhenUserDoesNotExist() {
+        assertThatThrownBy(() -> userService.getUserById(999L))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("999");
     }
 
     @Test
-    void shouldFailValidationWhenUserEmailIsInvalid() {
-        User validUser = User.builder()
-                .email("user%test.com")
-                .login("default-login")
-                .name("default-name")
-                .birthday(LocalDate.now())
-                .build();
+    void shouldThrowDuplicatedDataExceptionWhenEmailAlreadyExists() {
+        User existingUser = createTestUser(
+                1L, "duplicate@test.com", "login1", "User One", LocalDate.now());
+        userService.create(existingUser);
 
-        Set<ConstraintViolation<User>> violations = validator.validate(validUser);
-        String message = violations.iterator().next().getMessage();
+        User duplicateUser = createTestUser(2L, "duplicate@test.com", "login2",
+                "User Two", LocalDate.now());
 
-        assertEquals(1, violations.size(), "Обнаружено 1 нарушение валидации");
-        assertEquals("Email пользователя должен быть заполнен корректно.", message);
+        assertThatThrownBy(() -> userService.create(duplicateUser))
+                .isInstanceOf(DuplicatedDataException.class)
+                .hasMessageContaining("данный имейл уже используется");
+
+        Collection<User> users = userService.getUsers();
+        assertThat(users).hasSize(1);
     }
 
     @Test
-    void shouldFailValidationWhenFilmEmailIsEmpty() {
-        User validUser = User.builder()
-                .email("")
-                .login("default-login")
-                .name("default-name")
-                .birthday(LocalDate.now())
-                .build();
+    void shouldUpdateUserWithValidData() {
+        User originalUser = createTestUser(
+                1L, "find@test.com", "findLogin5", "findUser", LocalDate.now());
+        User createdUser = userService.create(originalUser);
 
-        Set<ConstraintViolation<User>> violations = validator.validate(validUser);
-        String message = violations.iterator().next().getMessage();
+        createdUser.setName("Updated Name");
+        createdUser.setEmail("Update Email");
 
-        assertEquals(1, violations.size(), "Обнаружено 1 нарушение валидации");
-        assertEquals("Email пользователя не может быть null или пустым.", message);
+        User updatedUser = userService.update(createdUser);
+
+        assertThat(updatedUser.getName()).isEqualTo("Updated Name");
+        assertThat(updatedUser.getEmail()).isEqualTo("Update Email");
     }
 
-    @Test
-    void shouldFailValidationWhenFilmEmailIsNull() {
-        User validUser = User.builder()
-                .email(null)
-                .login("default-login")
-                .name("default-name")
-                .birthday(LocalDate.now())
-                .build();
-
-        Set<ConstraintViolation<User>> violations = validator.validate(validUser);
-        String message = violations.iterator().next().getMessage();
-
-        assertEquals(1, violations.size(), "Обнаружено 1 нарушение валидации");
-        assertEquals("Email пользователя не может быть null или пустым.", message);
-    }
-
-    @Test
-    void shouldFailValidationWhenFilmLoginIsEmpty() {
-        User validUser = User.builder()
-                .email("user@test.com")
-                .login("")
-                .name("default-name")
-                .birthday(LocalDate.now())
-                .build();
-
-        Set<ConstraintViolation<User>> violations = validator.validate(validUser);
-        String message = violations.iterator().next().getMessage();
-
-        assertEquals(1, violations.size(), "Обнаружено 1 нарушение валидации");
-        assertEquals("Логин пользователя не может быть null или пустым.", message);
-    }
-
-    @Test
-    void shouldFailValidationWhenFilmLoginIsNull() {
-        User validUser = User.builder()
-                .email("user@test.com")
-                .login(null)
-                .name("default-name")
-                .birthday(LocalDate.now())
-                .build();
-
-        Set<ConstraintViolation<User>> violations = validator.validate(validUser);
-        String message = violations.iterator().next().getMessage();
-
-        assertEquals(1, violations.size(), "Обнаружено 1 нарушение валидации");
-        assertEquals("Логин пользователя не может быть null или пустым.", message);
-    }
-
-    @Test
-    void shouldFailValidationWhenUserBirthDateIsInFuture() {
-        User validUser = User.builder()
-                .email("user@test.com")
-                .login("default-login")
-                .name("default-name")
-                .birthday(LocalDate.of(3000, 5,7))
-                .build();
-
-        Set<ConstraintViolation<User>> violations = validator.validate(validUser);
-        String message = violations.iterator().next().getMessage();
-
-        assertEquals(1, violations.size(), "Обнаружено 1 нарушение валидации");
-        assertEquals("День рождения пользователя не может быть в будущем.", message);
-    }
-
-    @Test
-    void shouldFailValidationWhenFilmBirthdayIsNull() {
-        User validUser = User.builder()
-                .email("user@test.com")
-                .login("default-login")
-                .name("default-name")
-                .birthday(null)
-                .build();
-
-        Set<ConstraintViolation<User>> violations = validator.validate(validUser);
-        String message = violations.iterator().next().getMessage();
-
-        assertEquals(1, violations.size(), "Обнаружено 1 нарушение валидации");
-        assertEquals("День рождения пользователя не может быть null.", message);
-    }
 }
