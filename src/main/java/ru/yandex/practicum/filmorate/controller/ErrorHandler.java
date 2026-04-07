@@ -18,27 +18,27 @@ import java.util.Map;
 @RestControllerAdvice
 public class ErrorHandler {
 
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public Map<String, String> handleDuplicatedDataException(final DuplicatedDataException e) {
+   @ExceptionHandler
+   @ResponseStatus(HttpStatus.CONFLICT)
+   public Map<String, String> handleDuplicatedDataException(final DuplicatedDataException e) {
         return Map.of("error", e.getMessage());
-    }
+   }
 
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleNotFoundException(final NotFoundException e) {
+   @ExceptionHandler
+   @ResponseStatus(HttpStatus.NOT_FOUND)
+   public Map<String, String> handleNotFoundException(final NotFoundException e) {
         return Map.of("error", e.getMessage());
-    }
+   }
 
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleValidationException(final ValidationException e) {
+   @ExceptionHandler
+   @ResponseStatus(HttpStatus.BAD_REQUEST)
+   public Map<String, String> handleValidationException(final ValidationException e) {
         return Map.of("error", e.getMessage());
-    }
+   }
 
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleMethodArgumentNotValidException(
+   @ExceptionHandler
+   @ResponseStatus(HttpStatus.BAD_REQUEST)
+   public Map<String, String> handleMethodArgumentNotValidException(
             final MethodArgumentNotValidException ex) {
 
         Map<String, String> errors = new HashMap<>();
@@ -49,11 +49,11 @@ public class ErrorHandler {
         });
         log.warn("Ошибки валидации: {}", errors);
         return errors;
-    }
+   }
 
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Map<String, String> handleInternalServerError(final Throwable e) {
-        return Map.of("error", "Произошла непредвиденная ошибка.");
-    }
+   @ExceptionHandler
+   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+   public Map<String, String> handleInternalServerError(final Throwable e) {
+       return Map.of("error", "Произошла непредвиденная ошибка.");
+   }
 }
