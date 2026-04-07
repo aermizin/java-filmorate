@@ -73,6 +73,7 @@ public class UserRepository extends AbstractRepository<User> implements UserStor
         );
         return updateUser;
     }
+
     public void deleteTable() {
         jdbc.execute(DELETE_TABLE_QUERY);
     }
