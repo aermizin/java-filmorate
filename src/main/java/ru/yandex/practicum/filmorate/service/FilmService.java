@@ -97,9 +97,10 @@ public class FilmService {
         return new LinkedHashSet<>(loadGenresToFilms(popularFilms));
     }
 
-    private Set<Film> loadGenresToFilms (Collection<Film> films) {
+    private Set<Film> loadGenresToFilms(Collection<Film> films) {
         return films.stream()
-                .map(film -> {film.setGenres(filmStorage.findGenresByFilmId(film.getId()));
+                .map(film -> {
+                    film.setGenres(filmStorage.findGenresByFilmId(film.getId()));
                     return film;
                 })
                 .collect(Collectors.toCollection(LinkedHashSet::new));
