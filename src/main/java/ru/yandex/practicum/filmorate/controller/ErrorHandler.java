@@ -55,5 +55,4 @@ public class ErrorHandler {
    public Map<String, String> handleInternalServerError(final Throwable e) {
        return Map.of("error", "Произошла непредвиденная ошибка.");
    }
-
 }
