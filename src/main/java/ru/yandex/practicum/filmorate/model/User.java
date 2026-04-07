@@ -1,17 +1,16 @@
 package ru.yandex.practicum.filmorate.model;
 
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class User {
     private Long id;
 
@@ -24,7 +23,10 @@ public class User {
 
     private String name;
 
-    @PastOrPresent(message = "День рождение пользователя не может быть в будущем.")
-    @NotNull(message = "День рождение пользователя не может быть null.")
+    @PastOrPresent(message = "День рождения пользователя не может быть в будущем.")
+    @NotNull(message = "День рождения пользователя не может быть null.")
     private LocalDate birthday;
+
+    @Builder.Default
+    private Set<Friendship> friendship = new HashSet<>();
 }
