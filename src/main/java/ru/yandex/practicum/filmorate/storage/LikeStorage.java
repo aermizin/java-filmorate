@@ -10,7 +10,7 @@ public interface LikeStorage {
 
     Optional<Like> findById(Long filmId, Long userId);
 
-    Collection<Film> getPopularFilmsByLikes (Integer count);
+    Collection<Film> getPopularFilmsByLikes(Integer count);
 
     boolean addLike(Long filmId, Long userId);
 
