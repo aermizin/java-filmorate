@@ -19,7 +19,7 @@ public class LikeRepository extends AbstractRepository<Like> implements LikeStor
     private static final String GET_POPULAR_FILMS_BY_LIKES = "SELECT f.id, f.name, f.description, f.release_date, f.duration, " +
             "r.id AS mpa, r.name AS rating_name, COALESCE(COUNT(l.user_id), 0) AS like_count FROM film AS f " +
             "LEFT JOIN rating AS r ON f.mpa = r.id LEFT JOIN film_like AS l ON f.id = l.film_id GROUP BY f.id, f.name, " +
-            "f.description, f.release_date, f.duration, r.id, r.name ORDER BY like_count DESC, f.id LIMIT ?";;
+            "f.description, f.release_date, f.duration, r.id, r.name ORDER BY like_count DESC, f.id LIMIT ?";
 
     private final RowMapper<Film> filmRowMapper;
 
