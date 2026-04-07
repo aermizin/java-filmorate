@@ -38,8 +38,7 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleMethodArgumentNotValidException(
-            final MethodArgumentNotValidException ex) {
+    public Map<String, String> handleMethodArgumentNotValidException(final MethodArgumentNotValidException ex) {
 
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
@@ -49,6 +48,12 @@ public class ErrorHandler {
         });
         log.warn("Ошибки валидации: {}", errors);
         return errors;
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, String> handleInternalServerError(final Throwable e) {
+        return Map.of("error", "Произошла непредвиденная ошибка.");
     }
 
 }
