@@ -76,7 +76,7 @@ class UserControllerTest {
         User createdUser = userStorage.create(user);
 
         Optional<User> userOpt = userStorage.findById(createdUser.getId());
-        if(userOpt.isPresent()) {
+        if (userOpt.isPresent()) {
             User foundUser = userOpt.get();
 
             assertThat(foundUser.getId()).isEqualTo(createdUser.getId());
@@ -122,5 +122,4 @@ class UserControllerTest {
         assertThat(updatedUser.getName()).isEqualTo("Updated Name");
         assertThat(updatedUser.getEmail()).isEqualTo("Update Email");
     }
-
 }
