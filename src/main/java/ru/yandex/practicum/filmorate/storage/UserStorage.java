@@ -5,8 +5,9 @@ import ru.yandex.practicum.filmorate.model.User;
 import java.util.Optional;
 @Component
 public interface UserStorage extends BaseStorage<User> {
-    // Методы для проверки дубликатов
+
     Optional<User> findByEmail(String email);
+
     Optional<User> findByLogin(String login);
 }
 

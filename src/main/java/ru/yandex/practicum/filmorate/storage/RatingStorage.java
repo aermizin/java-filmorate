@@ -6,6 +6,8 @@ import java.util.Collection;
 import java.util.Optional;
 
 public interface RatingStorage {
+
     Collection<Rating> findAll();
+
     Optional<Rating> findById(Long id);
 }
