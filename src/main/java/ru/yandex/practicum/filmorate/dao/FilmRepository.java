@@ -1,15 +1,18 @@
 package ru.yandex.practicum.filmorate.dao;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.dto.GenreFilmDto;
 import ru.yandex.practicum.filmorate.exception.FilmNotFoundException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
+import java.sql.PreparedStatement;
 import java.util.*;
 
 
@@ -26,6 +29,11 @@ public class FilmRepository extends AbstractRepository<Film> implements FilmStor
             " duration = ? WHERE id = ?";
     private static final String FIND_GENRE_ID_BY_ID = "SELECT g.id, g.name FROM genre AS g JOIN film_genre AS " +
             "fg ON g.id = fg.genre_id WHERE fg.film_id = ? ORDER BY g.id ASC";
+    private static final String GET_POPULAR_FILMS_BY_LIKES = "SELECT f.id, f.name, f.description, f.release_date, f.duration, " +
+            "r.id AS mpa, r.name AS rating_name, COALESCE(COUNT(l.user_id), 0) AS like_count FROM film AS f " +
+            "LEFT JOIN rating AS r ON f.mpa = r.id LEFT JOIN film_like AS l ON f.id = l.film_id GROUP BY f.id, f.name, " +
+            "f.description, f.release_date, f.duration, r.id, r.name ORDER BY like_count DESC, f.id LIMIT ?";
+
     private static final String DELETE_TABLE_QUERY = "DELETE FROM film";
 
     private final RowMapper<Genre> genreRowMapper;
@@ -86,17 +94,43 @@ public class FilmRepository extends AbstractRepository<Film> implements FilmStor
         return updateFilm;
     }
 
+    @Override
+    public Collection<Film> getPopularFilmsByLikes(Integer count) {
+        return findMany(GET_POPULAR_FILMS_BY_LIKES, count);
+    }
+
+    @Override
     public Set<Genre> findGenresByFilmId(Long filmId) {
         return new LinkedHashSet<>(jdbc.query(FIND_GENRE_ID_BY_ID, genreRowMapper, filmId));
     }
 
-    private void insertFilmGenreLink(Long filmId, Long genreId) {
-        jdbc.update(INSERT_FILM_GENRE_QUERY, filmId, genreId);
-    }
+    @Override
+    public Collection<GenreFilmDto> findGenresByFilmsId(Collection <Long> filmsId) {
 
+        int countId = filmsId.size();
+
+        String requestParam = String.join(", ", Collections.nCopies(countId, "?"));
+
+        String sql = "SELECT g.id, g.name, fg.film_id FROM film_genre AS fg JOIN genre AS " +
+                "g ON fg.genre_id = g.id WHERE fg.film_id IN (" + requestParam + ") ORDER BY fg.film_id ASC, g.id ASC";
+
+        return new ArrayList<>(jdbc.query(sql,
+                (PreparedStatement ps) -> {
+                    int index = 1;
+                    for (Long filmId : filmsId) {
+                        ps.setLong(index++, filmId);
+                    }
+                },
+                BeanPropertyRowMapper.newInstance(GenreFilmDto.class)
+        ));
+    }
 
     @Override
     public void deleteTable() {
         jdbc.execute(DELETE_TABLE_QUERY);
+    }
+
+    private void insertFilmGenreLink(Long filmId, Long genreId) {
+        jdbc.update(INSERT_FILM_GENRE_QUERY, filmId, genreId);
     }
 }

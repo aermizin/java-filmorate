@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dto.GenreFilmDto;
 import ru.yandex.practicum.filmorate.exception.FilmNotFoundException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
@@ -60,7 +61,12 @@ public class FilmService {
         try {
             validateFilm(film);
             Film updateFilm = filmStorage.update(film);
+            Set<Genre> genres = filmStorage.findGenresByFilmId(updateFilm.getId());
+
+            updateFilm.setGenres(genres);
+
             log.info("Обновлены поля фильма c id = {}", updateFilm.getId());
+
             return updateFilm;
         } catch (NotFoundException e) {
             log.warn("Не удалось обновить фильм с id = {}", film.getId());
@@ -92,18 +98,37 @@ public class FilmService {
     }
 
     public Collection<Film> getPopularFilms(int count) {
-        Collection<Film> popularFilms = likeStorage.getPopularFilmsByLikes(count);
+        Collection<Film> popularFilms = filmStorage.getPopularFilmsByLikes(count);
         log.info("Успешно получено {} популярных фильмов", popularFilms.size());
         return new LinkedHashSet<>(loadGenresToFilms(popularFilms));
     }
 
-    private Set<Film> loadGenresToFilms(Collection<Film> films) {
+    private Collection<Film> loadGenresToFilms(Collection<Film> films) {
+        Collection<Long> filmsId = films.stream()
+                .map(Film::getId)
+                .collect(Collectors.toSet());
+
+        Collection<GenreFilmDto> result = filmStorage.findGenresByFilmsId(filmsId);
+
+        Map<Long, Set<Genre>> genresByFilmId = result.stream()
+                .collect(Collectors.groupingBy(
+                        GenreFilmDto::getFilmId,
+                        Collectors.mapping(
+                                dto -> Genre.builder()
+                                        .id(dto.getId())
+                                        .name(dto.getName())
+                                        .build(),
+                                Collectors.toSet()
+                        )
+                ));
+
         return films.stream()
                 .map(film -> {
-                    film.setGenres(filmStorage.findGenresByFilmId(film.getId()));
+                    Set<Genre> genres = genresByFilmId.getOrDefault(film.getId(), Collections.emptySet());
+                    film.setGenres(genres);
                     return film;
                 })
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+                .collect(Collectors.toList());
     }
 
     private void validateFilm(Film film) {
