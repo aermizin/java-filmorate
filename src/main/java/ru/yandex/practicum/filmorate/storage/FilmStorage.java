@@ -13,5 +13,5 @@ public interface FilmStorage extends BaseStorage<Film> {
 
     Set<Genre> findGenresByFilmId(Long filmId);
 
-    Collection<GenreFilmDto> findGenresByFilmsId(Collection <Long> filmsId);
+    Collection<GenreFilmDto> findGenresByFilmsId(Collection<Long> filmsId);
 }
