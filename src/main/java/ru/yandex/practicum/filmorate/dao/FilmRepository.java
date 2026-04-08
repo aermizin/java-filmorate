@@ -105,7 +105,7 @@ public class FilmRepository extends AbstractRepository<Film> implements FilmStor
     }
 
     @Override
-    public Collection<GenreFilmDto> findGenresByFilmsId(Collection <Long> filmsId) {
+    public Collection<GenreFilmDto> findGenresByFilmsId(Collection<Long> filmsId) {
 
         int countId = filmsId.size();
 
