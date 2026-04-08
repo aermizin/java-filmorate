@@ -6,7 +6,8 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class Genre {
+public class Like {
     private Long id;
-    private String name;
+    private Long filmId;
+    private Long userId;
 }

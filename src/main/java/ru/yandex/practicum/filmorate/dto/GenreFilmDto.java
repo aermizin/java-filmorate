@@ -1,4 +1,4 @@
-package ru.yandex.practicum.filmorate.model;
+package ru.yandex.practicum.filmorate.dto;
 
 import lombok.*;
 
@@ -6,7 +6,11 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class Genre {
+public class GenreFilmDto {
     private Long id;
+
     private String name;
+
+    private Long filmId;
 }
+

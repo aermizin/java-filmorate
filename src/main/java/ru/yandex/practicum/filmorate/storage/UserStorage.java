@@ -1,16 +1,12 @@
 package ru.yandex.practicum.filmorate.storage;
-
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.util.Collection;
+import java.util.Optional;
 
-public interface UserStorage {
-    Collection<User> findAll();
+public interface UserStorage extends BaseStorage<User> {
 
-    User create(User newUser);
+    Optional<User> findByEmail(String email);
 
-    User update(User updateUser);
-
-    User getUserById(Long id);
+    Optional<User> findByLogin(String login);
 }
 
